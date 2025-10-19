@@ -9,6 +9,8 @@ import SensorData from "./models/SensorData.js";
 import ActuatorState from "./models/ActuatorState.js";
 import sensorRoutes from "./routes/sensorRoutes.js";
 import deviceRoutes from "./routes/deviceRoutes.js";
+import automationRoutes from "./routes/automationRoutes.js";
+import { handleAutomation } from "./controllers/automationController.js";
 
 dotenv.config();
 const app = express();
@@ -51,6 +53,7 @@ app.use(express.json());
 // --- Routes ---
 app.use("/api/sensors", sensorRoutes);
 app.use("/api/device", deviceRoutes);
+app.use("/api/automation", automationRoutes);
 
 // --- MongoDB ---
 mongoose
@@ -95,6 +98,9 @@ mqttClient.on("message", async (topic, message) => {
 
       // Emit real-time update
       io.emit("updateData", newData);
+
+      // Handle automation based on sensor data
+      await handleAutomation(data);
 
       // Alert example
       if (data.temperature > 30 || data.humidity > 70) {

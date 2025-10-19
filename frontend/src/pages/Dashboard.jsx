@@ -4,6 +4,9 @@ import SensorCard from "../components/SensorCard";
 import FilterControls from "../components/FilterControls";
 import AlertBox from "../components/AlertBox";
 import DeviceControls from "../components/DeviceControls";
+import AutomationControls from "../components/AutomationControls";
+import ThermostatSensorCard from "../components/ThermostatSensorCard";
+import ActuatorAutomationCard from "../components/ActuatorAutomationCard";
 import { io } from "socket.io-client";
 
 const socket = io("http://localhost:5000");
@@ -57,6 +60,20 @@ const Dashboard = () => {
 
   // Derived lists for the UI
   const devices = Object.keys(sensorData || []);
+
+  // Group actuators (outputs) and sensors (inputs) for automation controls
+  // Assume actuators are those present in DeviceControls, sensors are the rest
+  const actuatorIds = ["light_1", "fan_1", "door_1"]; // You can fetch this dynamically if needed
+  const sensorDevices = devices.filter((id) => !actuatorIds.includes(id));
+
+  // Group sensors and thermostats by suffix (e.g., sensor_1 + thermostat_1)
+  // If you don't have thermostat_x devices, pair sensor_x with itself for demo
+  const sensorPairs = sensorDevices.map((sensorId) => {
+    // Try to find a matching thermostat by replacing 'sensor' with 'thermostat'
+    let thermostatId = sensorId.replace(/^sensor/, "thermostat");
+    if (!devices.includes(thermostatId)) thermostatId = sensorId; // fallback
+    return { sensorId, thermostatId };
+  });
 
   // Apply filter: deviceId and alerts-only (using same thresholds as app: temp>30 or humidity>70)
   const visibleDevices = devices.filter((d) => {
@@ -117,40 +134,42 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section className="lg:col-span-1">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="bg-white rounded-lg p-4 shadow-sm mb-4">
             <h3 className="text-lg font-semibold mb-2">Actuators</h3>
             <DeviceControls />
+          </div>
+          {/* Output group: Grouped actuator cards with automation controls */}
+          <div>
+            <h3 className="text-md font-semibold mb-2">
+              Automatic Lights & Switches
+            </h3>
+            <div className="grid grid-cols-1 gap-2">
+              {actuatorIds.map((actuatorId) => (
+                <ActuatorAutomationCard
+                  key={actuatorId}
+                  actuatorId={actuatorId}
+                />
+              ))}
+            </div>
           </div>
         </section>
 
         <section className="lg:col-span-2">
-          <div className="bg-white rounded-lg p-4 shadow-sm mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Sensors</h3>
-              <p className="text-sm text-gray-500">
-                Filter and explore sensor history
-              </p>
+          {/* Grouped Thermostat & Sensor cards */}
+          <div className="mb-4">
+            <h3 className="text-md font-semibold mb-2">
+              Automatic Thermostat & Sensors
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sensorPairs.map(({ sensorId, thermostatId }) => (
+                <ThermostatSensorCard
+                  key={sensorId}
+                  sensorId={sensorId}
+                  thermostatId={thermostatId}
+                  sensorData={sensorData[sensorId]}
+                />
+              ))}
             </div>
-            <div className="w-1/2">
-              <FilterControls
-                filters={filters}
-                setFilters={setFilters}
-                devices={devices}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {visibleDevices.length === 0 && (
-              <p className="text-gray-500">No sensors match current filters.</p>
-            )}
-            {visibleDevices.map((deviceId) => (
-              <SensorCard
-                key={deviceId}
-                deviceId={deviceId}
-                data={sensorData[deviceId]}
-              />
-            ))}
           </div>
         </section>
       </div>

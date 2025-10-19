@@ -4,6 +4,7 @@ import axios from "axios";
 const API_URL = "http://localhost:5000/api/sensors";
 const DEVICE_API = "http://localhost:5000/api/devices";
 const DEVICE_CONTROL_API = "http://localhost:5000/api/device";
+const AUTOMATION_API = "http://localhost:5000/api/automation";
 
 // Fetch latest sensor data (history)
 export const fetchSensorData = async () => {
@@ -34,6 +35,39 @@ export const sendDeviceCommand = async ({ type, deviceId, state }) => {
     return res.data;
   } catch (err) {
     console.error("Failed to send device command:", err);
+    throw err;
+  }
+};
+
+// Fetch automation settings
+export const fetchAutomationSettings = async () => {
+  try {
+    const res = await axios.get(AUTOMATION_API);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to fetch automation settings:", err);
+    return [];
+  }
+};
+
+// Create new automation settings
+export const createAutomationSettings = async (settings) => {
+  try {
+    const res = await axios.post(AUTOMATION_API, settings);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to create automation settings:", err);
+    throw err;
+  }
+};
+
+// Update existing automation settings
+export const updateAutomationSettings = async (id, settings) => {
+  try {
+    const res = await axios.put(`${AUTOMATION_API}/${id}`, settings);
+    return res.data;
+  } catch (err) {
+    console.error("Failed to update automation settings:", err);
     throw err;
   }
 };
